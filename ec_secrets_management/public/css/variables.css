@@ -1,0 +1,105 @@
+@import url("https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap");
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Sarabun", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: .8px;
+}
+
+/* Width of the scrollbar */
+::-webkit-scrollbar {
+    width: 2px;
+}
+
+/* Track of the scrollbar */
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Handle of the scrollbar */
+::-webkit-scrollbar-thumb {
+    background: var(--amber-glow-level-4);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: var(--amber-level-3);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+:root {
+    /* Amber */
+    --amber-level-1: rgb(255, 160, 122);
+    /* HEX CODE -> #FFA07A*/
+    --amber-level-2: rgb(255, 125, 65);
+    --amber-level-3: rgb(255, 126, 51);
+    --amber-level-4: #fd5321;
+
+    /* Green */
+    --green-level-1: rgb(41, 206, 0);
+    --green-level-2: rgb(16, 189, 0);
+    --green-level-3: rgb(0, 163, 27);
+
+    /* Blue */
+    --blue-level-1: rgb(48, 138, 255);
+    /* HEX CODE -> #308AFF */
+    --blue-level-2: rgb(44, 135, 255);
+    --blue-level-3: rgb(41, 134, 255);
+
+    /* Gray */
+    --gray: #818181ff;
+    --light-gray: rgb(208, 208, 208);
+    --dim-gray: #6A6A6Aff;
+    --cadet-gray: #9E9E9Eff;
+    --dark-gray: rgb(53, 53, 53);
+
+    /* Black */
+    --black-level-0: #242424;
+    --black-level-1: #0d0d0d;
+    --black-level-2: #000000;
+    --black-level-3: #282828;
+
+    /* White */
+    --off-white: rgb(253, 253, 253);
+    --white: #FEFFFFff;
+    --white-alt: rgb(249, 249, 249);
+    --white-border: rgb(240, 240, 240);
+    --antiflash-white: #EBEBEBff;
+
+    /* Silver */
+    --silver: #B4B4B4ff;
+    --silver-2: #BFBFBFff;
+
+    /* Shadows */
+    --level-0: 0 .5rem .5rem 0 rgba(0, 0, 0, .1);
+    --level-1: 0 1rem 1rem 0 rgba(0, 0, 0, .1);
+    --level-2: 0 1.5rem 1.5rem 0 rgba(0, 0, 0, .1);
+    --level-3: 0 2rem 2rem 0 rgba(0, 0, 0, .2);
+    --level-4: 0 2rem 2rem 0 rgba(0, 0, 0, .4);
+    --level-5: 0 3rem 3rem 0 rgba(0, 0, 0, .05);
+    --level-6: 0 4rem 4rem 0 rgba(0, 0, 0, .05);
+
+    /* Borders */
+    --dark-border-level-0: rgb(14, 14, 14);
+    --dark-border-level-1: rgb(41, 41, 41);
+
+    /* Glows */
+    --amber-glow-level-0: 0 .5rem .5rem 0 rgba(255, 115, 0, 0.1);
+    --amber-glow-level-1: 0 1rem 1rem 0 rgba(255, 102, 0, 0.1);
+    --amber-glow-level-2: 0 1.5rem 1.5rem 0 rgba(255, 128, 25, 0.1);
+    --amber-glow-level-3: 0 2rem 2rem 0 rgba(255, 123, 0, 0.2);
+    --amber-glow-level-4: 0 2rem 2rem 0 rgba(255, 115, 0, 0.4);
+}

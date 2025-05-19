@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:image:width" content="400" />
+    <meta property="og:image:height" content="300" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Locksmith | Secrets Management Platform" />
+    <meta property="og:description" content="Embra Connect's Secrets Management Platform" />
+    <meta property="og:url" content="https://www.embraconnect.com" />
+    <meta property="og:image" content="https://www.embraconnect.com/assets/png/color_logo_no_bg.png" />
+    <link rel="shortcut icon" href="../assets/icons/favicon.ico" type="image/x-icon">
+
+    <!-- Icons (Updated to jsDelivr) -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <script src="../js/constants.js"></script>
+    <!-- Vue -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="../js/login.js" defer></script>
+
+    <!-- Toaster -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <link rel="stylesheet" href="../css/auth.css">
+    <title>Locksmith | Log In</title>
+</head>
+
+<body>
+    <header>
+        <div class="logo-wrapper">
+            <img class="logo" src="../assets/images/logos/ec_connect_logo.png" alt="logo">
+        </div>
+    </header>
+
+    <div class="main-wrapper" id="app">
+        <div class="form-container">
+            <h1>
+                Welcome back!
+                <ion-icon name="hammer" class="form-title-icon"></ion-icon>
+            </h1>
+
+            <form @submit.prevent="handleLogin">
+                <div class="input-wrapper">
+                    <input type="email" v-model="email" placeholder="user@organization.com" required
+                        autocomplete="email">
+                </div>
+
+                <div class="input-wrapper">
+                    <input type="password" v-model="password" placeholder="Password" required>
+                </div>
+
+                <button class="form-btn" type="submit" :disabled="loading">
+                    {{ loading ? "Logging in..." : "Log In" }}
+                </button>
+            </form>
+
+            <p class="navigate-to-registration-section">
+                Don't have an account? <a href="./register.html">Set up one here</a>
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

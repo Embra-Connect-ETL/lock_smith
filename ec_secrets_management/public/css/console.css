@@ -1,0 +1,230 @@
+@import url("./variables.css");
+
+.container {
+    width: 1280px;
+    height: 700px;
+    margin: auto;
+    border: 3px solid #c5c5c58b;
+    border-radius: 24px;
+    background: var(--white);
+    padding: 4rem;
+    box-shadow: 0 4rem 8rem 0 rgba(0, 0, 0, .1);
+}
+
+.content-wrapper {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    padding: 2rem;
+}
+
+.logout-btn {
+    border: none;
+    background: none;
+    opacity: .8;
+    cursor: pointer;
+    transition: .1s all ease;
+}
+
+.logout-btn:hover {
+    opacity: 1;
+}
+
+.logout-btn ion-icon {
+    font-size: 3rem;
+    color: var(--dark-gray);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4rem;
+}
+
+header h2 {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    font-size: 2rem;
+    font-weight: bolder;
+    color: var(--dark-gray);
+}
+
+.header-icon {
+    font-size: 3rem;
+    background: var(--amber-level-1);
+    color: var(--white);
+    border-radius: 50%;
+    box-shadow: inset 0 1rem 1rem 0 rgba(0, 0, 0, .12);
+    padding: 1rem 1.04rem;
+}
+
+.search-bar {
+    width: 275px;
+    padding: .8rem 1.6rem;
+    border: none;
+    border-bottom: 1px solid #87878780;
+    background: none;
+    color: var(--dark-gray);
+    opacity: .8;
+    transition: .1s all ease;
+}
+
+.search-bar:focus {
+    opacity: 1;
+    transform: scale(1.03);
+    outline: none;
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 4rem;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .8rem 1.8rem;
+    border: none;
+    cursor: pointer;
+    border-radius: 24px;
+    font-weight: 700;
+    transition: .1s all ease;
+}
+
+.btn.delete {
+    background: var(--amber-level-3);
+    color: var(--white);
+    box-shadow: 0 1rem 1rem 0 rgba(0, 0, 0, .1);
+    opacity: 1;
+}
+
+.btn.add {
+    background: #efefef80;
+    color: #00000098;
+}
+
+.btn-icon {
+    font-size: 1.6rem;
+}
+
+.btn:hover {
+    opacity: .9;
+}
+
+.table-container {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #acacac58;
+    border-radius: 12px;
+}
+
+thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #e1e1e11d;
+}
+
+th {
+    background: var(--white);
+    border-bottom: .8px solid #acacac58;
+    color: var(--dark-gray);
+    font-weight: bolder;
+    font-size: 1.3rem;
+    text-align: left;
+    padding: 1rem;
+}
+
+td {
+    text-align: left;
+    background: var(--white);
+    border-bottom: 1px solid #e1e1e185;
+    font-weight: 600;
+    color: var(--dark-gray);
+    padding: 1rem;
+}
+
+.status.active,
+.status.expired {
+    color: var(--white);
+}
+
+.active span {
+    background: var(--green-level-3);
+    border-radius: 24px;
+    padding: .4rem 1.2rem;
+    font-weight: bold;
+    font-size: .8rem;
+    opacity: .8;
+}
+
+.expired span {
+    background: var(--amber-level-3);
+    border-radius: 24px;
+    padding: .4rem 1.2rem;
+    font-weight: bold;
+    font-size: .8rem;
+    opacity: .8;
+}
+
+.modal {
+    position: fixed;
+    z-index: 999999;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--white);
+    color: var(--dark-gray);
+    padding: 4rem;
+    border-radius: 12px;
+    width: 600px;
+}
+
+.modal h3 {
+    font-size: 2rem;
+    font-weight: 400;
+    margin-bottom: 2rem;
+}
+
+.modal input {
+    width: 100%;
+    padding: .8rem;
+    margin-top: 2rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #989898ad;
+    color: var(--dark-gray);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}

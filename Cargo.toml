@@ -1,0 +1,3 @@
+[workspace]
+resolver = "2"
+members = ["ec_secrets_manager_cli", "ec_secrets_management", "ec_secrets_repositories"]

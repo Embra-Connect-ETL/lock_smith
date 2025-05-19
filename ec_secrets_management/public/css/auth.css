@@ -1,0 +1,134 @@
+@import url("./variables.css");
+
+[v-cloak] {
+    display: none;
+}
+
+
+header {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    padding: .8rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .8rem;
+}
+
+header .logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+header .logo-wrapper .logo {
+    background: var(--amber-level-1);
+    border-radius: 50%;
+    padding: 1rem;
+    width: 6%;
+}
+
+.main-wrapper {
+    padding: 2rem;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white-alt)
+}
+
+.form-container {
+    width: 768px;
+    border: 3px solid #efefef80;
+    background: var(--white);
+    padding: 4rem;
+    border-radius: 24px 24px 9px 24px;
+    box-shadow: 0 4rem 8rem 0 rgba(0, 0, 0, .01);
+}
+
+.form-container h1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 2rem;
+    font-weight: 700;
+    gap: .6rem;
+    margin-bottom: 4rem;
+    color: var(--dark-gray);
+}
+
+.form-title-icon {
+    font-size: 2rem;
+    background: var(--amber-level-1);
+    color: var(--white);
+    padding: 1rem;
+    border-radius: 99px;
+    box-shadow: inset var(--level-2);
+}
+
+.input-wrapper {
+    width: 100%;
+}
+
+input {
+    width: 100%;
+    max-width: 376px;
+    margin-bottom: 1.2rem;
+    border: none;
+    padding: .8rem !important;
+    background: none;
+    border-bottom: 1px solid #a8a8a8ee;
+    height: unset;
+    opacity: .8;
+    transition: .2s all ease;
+}
+
+input:focus {
+    opacity: 1;
+    outline: none;
+    border-bottom: 1px solid #b0b0b0;
+    transform: scale(1.04);
+}
+
+.login-form,
+.registration-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* #F4F3F3 */
+
+.form-btn {
+    border: none;
+    padding: .8rem;
+    border-radius: 24px;
+    background: var(--amber-level-1);
+    color: var(--white);
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-top: 2rem !important;
+    margin-bottom: 2rem !important;
+    width: 100%;
+    box-shadow: var(--level-1);
+    cursor: pointer;
+    transition: .2s all ease;
+}
+
+.form-btn:hover {
+    box-shadow: var(--level-2);
+}
+
+.navigate-to-registration-section,
+.navigate-to-login-section {
+    text-align: center;
+    color: var(--dark-gray);
+    font-weight: 400;
+}
+
+.navigate-to-registration-section a,
+.navigate-to-login-section a {
+    text-decoration: none;
+}

@@ -1,0 +1,38 @@
+services:
+  ec_secrets_management:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - mongo-db
+    links:
+      - "mongo-db"
+    ports:
+      - "8089:8089"
+    networks:
+      - ec_network
+    environment:
+      ECS_DATABASE_URL: ${ECS_DATABASE_URL}
+      ECS_DATABASE_NAME: ${ECS_DATABASE_NAME}
+      ECS_ENCRYPTION_KEY: ${ECS_ENCRYPTION_KEY}
+      ECS_AUTHENTICATION_KEY: ${ECS_AUTHENTICATION_KEY}
+      ECS_SIGNING_KEY: ${ECS_SIGNING_KEY}
+
+  mongo-db:
+    image: mongo:latest
+    container_name: ec_data_store
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    networks:
+      - ec_network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+    volumes:
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+      - ./data:/data/db
+
+networks:
+  ec_network:
+    driver: bridge
