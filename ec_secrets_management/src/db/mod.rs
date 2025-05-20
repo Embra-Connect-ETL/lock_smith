@@ -1,11 +1,12 @@
 #![allow(unused)]
-use ec_secrets_repositories::db::connect;
+use ec_secrets_shared_library::db::connect;
 use rocket::fairing::AdHoc;
+use std::sync::Arc;
 
 /*-------------
 Custom modules
 ---------------*/
-use ec_secrets_repositories::repositories::{
+use ec_secrets_shared_library::repositories::{
     keys::KeyRepository, users::UserRepository, vault::VaultRepository,
 };
 
@@ -15,9 +16,9 @@ pub fn init() -> AdHoc {
         |rocket| async {
             match connect().await {
                 Ok((user_repository, vault_repository, key_repository)) => rocket
-                    .manage(user_repository)
-                    .manage(vault_repository)
-                    .manage(key_repository),
+                    .manage(Arc::new(user_repository))
+                    .manage(Arc::new(vault_repository))
+                    .manage(Arc::new(key_repository)),
                 Err(error) => {
                     panic!("Cannot connect to instance:: {:?}", error)
                 }

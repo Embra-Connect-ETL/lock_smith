@@ -1,6 +1,8 @@
-use std::sync::Arc;
-
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use crate::{
+    models::{User, UserCredentials},
+    repositories::keys::KeyRepository,
+};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use bcrypt::verify;
 use chrono::{Duration, Utc};
 use pasetors::{
@@ -9,16 +11,10 @@ use pasetors::{
     public,
     version4::V4,
 };
-use rocket::State;
 use sha2::{Digest, Sha256};
 
-use ec_secrets_repositories::{
-    models::{User, UserCredentials},
-    repositories::keys::KeyRepository,
-};
-
 pub async fn decode_keys(
-    repo: &State<Arc<KeyRepository>>,
+    repo: &KeyRepository,
 ) -> Result<(AsymmetricSecretKey<V4>, AsymmetricPublicKey<V4>), String> {
     let kp = repo
         .get_or_create_key_pair()
@@ -38,10 +34,11 @@ pub async fn decode_keys(
 /*---------------------------------------------
 Authorize the user via password verification.
 ----------------------------------------------*/
+
 pub async fn authorize_user(
     user: &User,
     credentials: &UserCredentials,
-    repo: &State<Arc<KeyRepository>>,
+    repo: &KeyRepository,
 ) -> Result<String, String> {
     if !verify(&credentials.password, &user.password).map_err(|e| e.to_string())? {
         return Err("Invalid credentials".into());
