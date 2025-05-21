@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use home;
 use pasetors::{
     Public,
     claims::{Claims, ClaimsValidationRules},
@@ -8,8 +9,7 @@ use pasetors::{
     version4::V4,
 };
 use prettytable::{Cell, Row, Table};
-use std::{fs, io::Write};
-use tempfile::NamedTempFile;
+use std::fs;
 
 use ec_secrets_shared_library::{
     db::connect,
@@ -19,36 +19,40 @@ use ec_secrets_shared_library::{
 };
 
 pub struct AuthenticatedUser {
-    token_file: Option<NamedTempFile>,
     claims: Option<Claims>,
-    user_repo: UserRepository,
-    key_repo: KeyRepository,
-    vault_repo: VaultRepository,
+    user_repo: Option<UserRepository>,
+    key_repo: Option<KeyRepository>,
+    vault_repo: Option<VaultRepository>,
 }
 
 impl AuthenticatedUser {
     pub async fn new() -> Self {
-        let repos = connect()
-            .await
-            .expect("\x1b[0;31m Error connecting to repositories \x1b[0m");
-
         Self {
             claims: None,
-            key_repo: repos.2,
-            user_repo: repos.0,
-            token_file: None,
-            vault_repo: repos.1,
+            key_repo: None,
+            user_repo: None,
+            vault_repo: None,
         }
     }
 
-    pub async fn login(&mut self, creds: UserCredentials) -> Result<(), String> {
-        self.token_file = Some(NamedTempFile::new().map_err(|error| error.to_string())?);
+    pub async fn get_repos(&mut self) -> Result<(), String> {
+        let repos = connect().await.map_err(|error| error.to_string())?;
 
-        let user_doc = self
-            .user_repo
+        self.key_repo = Some(repos.2);
+        self.user_repo = Some(repos.0);
+        self.vault_repo = Some(repos.1);
+        Ok(())
+    }
+    pub async fn login(&mut self, creds: UserCredentials) -> Result<(), String> {
+        self.get_repos().await.map_err(|error| error)?;
+        let Some(user_repo) = &self.user_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+
+        let user_doc = user_repo
             .get_user_by_email(&creds.email)
             .await
-            .map_err(|err| err.to_string())?;
+            .map_err(|error| error.to_string())?;
 
         if let Some(user_doc) = user_doc {
             let user = User {
@@ -57,12 +61,15 @@ impl AuthenticatedUser {
                 password: user_doc.password.clone(),
                 created_at: user_doc.created_at.to_rfc3339(),
             };
-            let token = authorize_user(&user, &creds, &self.key_repo).await?;
-            self.token_file.as_mut().map(|token_file| {
-                token_file
-                    .write_all(token.as_bytes())
-                    .map_err(|error| error.to_string())
-            });
+            let Some(key_repo) = &self.key_repo else {
+                return Err("Failed to connect to database".to_owned());
+            };
+            let token = authorize_user(&user, &creds, key_repo).await?;
+            let Some(home_dir) = home::home_dir() else {
+                return Err("Error acccessing the home directory".to_owned());
+            };
+            let token_file = home_dir.join(".lock_smith.config");
+            fs::write(token_file, token).map_err(|error| error.to_string())?;
         } else {
             return Err("Invalid login credentials".to_owned());
         }
@@ -71,16 +78,22 @@ impl AuthenticatedUser {
     }
 
     pub async fn validate_token(&mut self) -> Result<(), String> {
-        let Some(token_path) = &self.token_file else {
-            return Err("User is not authenticated".into());
+        self.get_repos().await.map_err(|error| error)?;
+        let Some(home_dir) = home::home_dir() else {
+            return Err("Error acccessing the home directory".to_owned());
         };
+        let token_file = home_dir.join(".lock_smith.config");
 
-        let token = fs::read_to_string(token_path).map_err(|error| error.to_string())?;
+        let token = fs::read_to_string(token_file).map_err(|error| error.to_string())?;
 
         let untrusted_token = UntrustedToken::<Public, V4>::try_from(token.as_str())
             .map_err(|error| error.to_string())?;
 
-        let keys = decode_keys(&self.key_repo).await.map_err(|error| error)?;
+        let Some(key_repo) = &self.key_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+
+        let keys = decode_keys(key_repo).await.map_err(|error| error)?;
 
         let validation_rules = ClaimsValidationRules::new();
 
@@ -97,14 +110,13 @@ impl AuthenticatedUser {
     }
 
     pub async fn get_users(&mut self) -> Result<(), String> {
-        if self.token_file.is_none() {
-            return Err(format!("Please authenticate before running this command"));
-        }
-
         self.validate_token().await.map_err(|error| error)?;
 
-        let users = self
-            .user_repo
+        let Some(user_repo) = &self.user_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+
+        let users = user_repo
             .list_users()
             .await
             .map_err(|error| error.to_string())?;

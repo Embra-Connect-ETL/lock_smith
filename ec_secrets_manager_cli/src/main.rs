@@ -5,34 +5,34 @@ use ec_secrets_shared_library::models::UserCredentials;
 #[tokio::main]
 async fn main() {
     let mut authenticated_user = AuthenticatedUser::new().await;
-    let matches =
-        Command::new("lock_smith")
-            .version("1.0")
-            .about("Embra Connect Secrets Manager CLI")
-            .arg_required_else_help(true)
-            .subcommand(
-                Command::new("login")
-                    .about("authenticates user to the embra connect secrets manager service")
-                    .arg_required_else_help(true)
-                    .arg(
-                        Arg::new("email")
-                            .short('e')
-                            .long("email")
-                            .required(true)
-                            .help("The user's email"),
-                    )
-                    .arg(
-                        Arg::new("password")
-                            .short('p')
-                            .long("password")
-                            .required(true)
-                            .help("The user's password"),
-                    )
-                    .subcommand(Command::new("list_users").about(
-                        "lists all user accounts in the embra connect secrets manager service",
-                    )),
-            )
-            .get_matches();
+    let matches = Command::new("lock_smith")
+        .version("1.0")
+        .about("Embra Connect Secrets Manager CLI")
+        .arg_required_else_help(true)
+        .subcommand(
+            Command::new("login")
+                .about("authenticates user to the embra connect secrets manager service")
+                .arg_required_else_help(true)
+                .arg(
+                    Arg::new("email")
+                        .short('e')
+                        .long("email")
+                        .required(true)
+                        .help("The user's email"),
+                )
+                .arg(
+                    Arg::new("password")
+                        .short('p')
+                        .long("password")
+                        .required(true)
+                        .help("The user's password"),
+                ),
+        )
+        .subcommand(
+            Command::new("list_users")
+                .about("lists all user accounts in the embra connect secrets manager service"),
+        )
+        .get_matches();
 
     match matches.subcommand() {
         Some(("login", sub_matches)) => {
@@ -48,18 +48,12 @@ async fn main() {
                 .await
                 .unwrap_or_else(|err| println!("\x1b[0;31m Login failed: {err} \x1b[0m"));
             println!("\x1b[0;32m Login Successful \x1b[0m");
-
-            match sub_matches.subcommand() {
-                Some(("list_users", _)) => {
-                    authenticated_user
-                        .get_users()
-                        .await
-                        .unwrap_or_else(|error| {
-                            println!("\x1b[0;31m Error gettig users: {error} \x1b[0m")
-                        });
-                }
-                _ => {}
-            }
+        }
+        Some(("list_users", _)) => {
+            authenticated_user
+                .get_users()
+                .await
+                .unwrap_or_else(|error| println!("\x1b[0;31m Error gettig users: {error} \x1b[0m"));
         }
         _ => {}
     }
