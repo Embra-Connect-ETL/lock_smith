@@ -2,7 +2,7 @@
 /*-------------
 Custom modules
 -------------*/
-use ec_secrets_repositories::models::{User, UserCredentials};
+use ec_secrets_shared_library::models::{User, UserCredentials};
 
 /*-----------------
 3rd party modules

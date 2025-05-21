@@ -3,8 +3,8 @@ Custom modules
 --------------*/
 use crate::models::*;
 use crate::request_guards::TokenGuard;
-use ec_secrets_repositories::models::{Secret, VaultDocument};
-use ec_secrets_repositories::repositories::vault::VaultRepository;
+use ec_secrets_shared_library::models::{Secret, VaultDocument};
+use ec_secrets_shared_library::repositories::vault::VaultRepository;
 
 /*-------------
 3rd party modules
