@@ -18,8 +18,6 @@ pub async fn connect() -> mongodb::error::Result<(UserRepository, VaultRepositor
     let client_options = ClientOptions::parse(database_url).await?;
     let client = Client::with_options(client_options)?;
 
-    dbg!("Successfully initialized vault database...");
-
     let user_repo = UserRepository::new(&client, &database_name, "users");
 
     let vault_repo = VaultRepository::new(&client, &database_name, "vault");
