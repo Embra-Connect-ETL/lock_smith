@@ -15,7 +15,6 @@ mod fairings;
 mod models;
 mod request_guards;
 mod routes;
-mod utils;
 
 use custom_catchers::*;
 use routes::users::user_routes;

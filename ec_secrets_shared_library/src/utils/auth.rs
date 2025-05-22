@@ -3,7 +3,7 @@ use crate::{
     repositories::keys::KeyRepository,
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use bcrypt::verify;
+use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{Duration, Utc};
 use pasetors::{
     claims::Claims,
@@ -70,4 +70,8 @@ pub async fn authorize_user(
     let (private_key, _public_key) = decode_keys(repo).await.map_err(|e| e.to_string())?;
     let token = public::sign(&private_key, &claims, None, None).map_err(|e| e.to_string())?;
     Ok(token)
+}
+
+pub fn hash_password(password: String) -> Result<String, String> {
+    hash(password, DEFAULT_COST).map_err(|e| e.to_string())
 }

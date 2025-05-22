@@ -1,2 +1,1 @@
-mod auth;
-mod utils;
+pub mod auth;
