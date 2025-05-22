@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-
+#![allow(unused)]
 use home;
 use pasetors::{
     Public,
@@ -13,7 +13,7 @@ use std::fs;
 
 use ec_secrets_shared_library::{
     db::connect,
-    models::{User, UserCredentials},
+    models::{Secret, User, UserCredentials},
     repositories::{keys::KeyRepository, users::UserRepository, vault::VaultRepository},
     utils::auth::{authorize_user, decode_keys, hash_password},
 };
@@ -182,9 +182,96 @@ impl AuthenticatedUser {
         Ok(())
     }
 
-    pub async fn create_secret(&mut self) -> Result<(), String>{
+    pub async fn create_secret(&mut self, secret: Secret) -> Result<(), String> {
         self.validate_token().await?;
-        
+
+        let Some(claim) = &self.claims else {
+            return Err("Invalid token".to_owned());
+        };
+
+        let Some(created_by) = claim.get_claim("sub") else {
+            return Err("".to_owned());
+        };
+
+        let Some(vault_repo) = &self.vault_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+
+        vault_repo
+            .create_secret(&secret.key, &secret.value, created_by.to_string().as_str())
+            .await
+            .map_err(|error| error.to_string())?;
+        Ok(())
+    }
+
+    pub async fn list_secrets(&mut self, id: Option<&str>) -> Result<(), String> {
+        self.validate_token().await?;
+
+        let mut table = Table::new();
+
+        let Some(claim) = &self.claims else {
+            return Err("Invalid token".to_owned());
+        };
+
+        let Some(created_by) = claim.get_claim("sub") else {
+            return Err("".to_owned());
+        };
+
+        let Some(vault_repo) = &self.vault_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+
+        if let Some(id) = id {
+            table.add_row(Row::new(vec![Cell::new("Id"), Cell::new("Secret")]));
+            let Some(secret) = vault_repo
+                .get_secret_by_id(id, created_by.to_string().as_str())
+                .await
+                .map_err(|error| error.to_string())?
+            else {
+                return Err("Invalid secret id".to_owned());
+            };
+            table.add_row(Row::new(vec![Cell::new(id), Cell::new(secret.as_str())]));
+        } else {
+            table.add_row(Row::new(vec![
+                Cell::new("Id"),
+                Cell::new("Key"),
+                Cell::new("Value"),
+            ]));
+            let secrets = vault_repo
+                .list_secrets(created_by.to_string().as_str())
+                .await
+                .map_err(|error| error.to_string())?;
+            secrets.iter().for_each(|secret| {
+                table.add_row(Row::new(vec![
+                    Cell::new(secret.id.to_string().as_str()),
+                    Cell::new(secret.key.as_str()),
+                    Cell::new(secret.value.as_str()),
+                ]));
+            });
+        }
+        table.printstd();
+        Ok(())
+    }
+
+    pub async fn delete_secret(&mut self, id: &str) -> Result<(), String> {
+        self.validate_token().await?;
+
+        let Some(claim) = &self.claims else {
+            return Err("Invalid token".to_owned());
+        };
+
+        let Some(created_by) = claim.get_claim("sub") else {
+            return Err("".to_owned());
+        };
+
+        let Some(vault_repo) = &self.vault_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+
+        vault_repo
+            .delete_secret(id, created_by.to_string().as_str())
+            .await
+            .map_err(|error| error.to_string())?;
         Ok(())
     }
 }
