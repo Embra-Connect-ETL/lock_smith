@@ -9,7 +9,7 @@ use mongodb::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::models::UserDocument;
+use crate::{models::UserDocument, utils::auth::hash_password};
 
 #[derive(Debug)]
 pub struct UserRepository {

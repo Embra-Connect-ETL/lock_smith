@@ -15,7 +15,7 @@ use ec_secrets_shared_library::{
     db::connect,
     models::{User, UserCredentials},
     repositories::{keys::KeyRepository, users::UserRepository, vault::VaultRepository},
-    utils::auth::{authorize_user, decode_keys},
+    utils::auth::{authorize_user, decode_keys, hash_password},
 };
 
 pub struct AuthenticatedUser {
@@ -37,14 +37,13 @@ impl AuthenticatedUser {
 
     pub async fn get_repos(&mut self) -> Result<(), String> {
         let repos = connect().await.map_err(|error| error.to_string())?;
-
         self.key_repo = Some(repos.2);
         self.user_repo = Some(repos.0);
         self.vault_repo = Some(repos.1);
         Ok(())
     }
     pub async fn login(&mut self, creds: UserCredentials) -> Result<(), String> {
-        self.get_repos().await.map_err(|error| error)?;
+        self.get_repos().await?;
         let Some(user_repo) = &self.user_repo else {
             return Err("Failed to connect to database".to_owned());
         };
@@ -78,7 +77,7 @@ impl AuthenticatedUser {
     }
 
     pub async fn validate_token(&mut self) -> Result<(), String> {
-        self.get_repos().await.map_err(|error| error)?;
+        self.get_repos().await?;
         let Some(home_dir) = home::home_dir() else {
             return Err("Error acccessing the home directory".to_owned());
         };
@@ -93,7 +92,7 @@ impl AuthenticatedUser {
             return Err("Failed to connect to database".to_owned());
         };
 
-        let keys = decode_keys(key_repo).await.map_err(|error| error)?;
+        let keys = decode_keys(key_repo).await?;
 
         let validation_rules = ClaimsValidationRules::new();
 
@@ -110,7 +109,7 @@ impl AuthenticatedUser {
     }
 
     pub async fn get_users(&mut self, id: Option<&str>) -> Result<(), String> {
-        self.validate_token().await.map_err(|error| error)?;
+        self.validate_token().await?;
 
         let Some(user_repo) = &self.user_repo else {
             return Err("Failed to connect to database".to_owned());
@@ -150,6 +149,42 @@ impl AuthenticatedUser {
             });
         }
         table.printstd();
+        Ok(())
+    }
+
+    pub async fn delete_user(&mut self, id: Option<&str>) -> Result<(), String> {
+        self.validate_token().await?;
+        let Some(user_repo) = &self.user_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+        let Some(id) = id else {
+            return Err("Please provide an id for the account to delete".to_owned());
+        };
+
+        user_repo
+            .delete_user(id)
+            .await
+            .map_err(|error| error.to_string())?;
+
+        Ok(())
+    }
+
+    pub async fn create_user(&mut self, creds: UserCredentials) -> Result<(), String> {
+        self.validate_token().await?;
+        let Some(user_repo) = &self.user_repo else {
+            return Err("Failed to connect to database".to_owned());
+        };
+        let hashed_pwd = hash_password(creds.password)?;
+        user_repo
+            .create_user(&creds.email, &hashed_pwd)
+            .await
+            .map_err(|error| error.to_string())?;
+        Ok(())
+    }
+
+    pub async fn create_secret(&mut self) -> Result<(), String>{
+        self.validate_token().await?;
+        
         Ok(())
     }
 }

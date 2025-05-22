@@ -42,6 +42,33 @@ async fn main() {
                                 .required(false)
                                 .help("user account id"),
                         ),
+                )
+                .subcommand(
+                    Command::new("delete").about("delete user account").arg(
+                        Arg::new("id")
+                            .short('i')
+                            .long("id")
+                            .required(true)
+                            .help("user account id"),
+                    ),
+                )
+                .subcommand(
+                    Command::new("create")
+                        .about("create a new user account in lock smith")
+                        .arg(
+                            Arg::new("email")
+                                .short('e')
+                                .long("email")
+                                .required(true)
+                                .help("user email address"),
+                        )
+                        .arg(
+                            Arg::new("password")
+                                .short('p')
+                                .long("password")
+                                .required(true)
+                                .help("user's password"),
+                        ),
                 ),
         )
         .get_matches();
@@ -55,21 +82,39 @@ async fn main() {
                     .unwrap()
                     .to_string(),
             };
-            authenticated_user
-                .login(creds)
-                .await
-                .unwrap_or_else(|err| println!("\x1b[0;31m Login failed: {err} \x1b[0m"));
-            println!("\x1b[0;32m Login Successful \x1b[0m");
+            authenticated_user.login(creds).await.map_or_else(
+                |error| println!("\x1b[0;31m Login failed: {error} \x1b[0m"),
+                |_| println!("\x1b[0;32m Login successful \x1b[0m"),
+            );
         }
         Some(("users", submatches)) => match submatches.subcommand() {
             Some(("list", submatches)) => {
                 let id: Option<&str> = submatches.get_one::<String>("id").map(|id| id.as_str());
-                authenticated_user
-                    .get_users(id)
-                    .await
-                    .unwrap_or_else(|error| {
-                        println!("\x1b[0;31m Error gettig users: {error} \x1b[0m")
-                    });
+                authenticated_user.get_users(id).await.map_or_else(
+                    |error| println!("\x1b[0;31m Error fetching users: {error} \x1b[0m"),
+                    |_| println!("\x1b[0;32m Fetch successful \x1b[0m"),
+                );
+            }
+            Some(("delete", submatches)) => {
+                let id: Option<&str> = submatches.get_one::<String>("id").map(|id| id.as_str());
+                authenticated_user.delete_user(id).await.map_or_else(
+                    |error| println!("\x1b[0;31m Error deleting user: {error} \x1b[0m"),
+                    |_| println!("\x1b[0;32m Deleted user successfully '\x1b[0m"),
+                );
+            }
+            Some(("create", submatches)) => {
+                let creds = UserCredentials {
+                    email: submatches.get_one::<String>("email").unwrap().to_string(),
+                    password: submatches
+                        .get_one::<String>("password")
+                        .unwrap()
+                        .to_string(),
+                };
+
+                authenticated_user.create_user(creds).await.map_or_else(
+                    |error| println!("\x1b[0;31m Error creating user: {error} \x1b[0m"),
+                    |_| println!("\x1b[0;32m User created successfully \x1b[0m"),
+                );
             }
             _ => {}
         },
