@@ -109,17 +109,12 @@ impl AuthenticatedUser {
         }
     }
 
-    pub async fn get_users(&mut self) -> Result<(), String> {
+    pub async fn get_users(&mut self, id: Option<&str>) -> Result<(), String> {
         self.validate_token().await.map_err(|error| error)?;
 
         let Some(user_repo) = &self.user_repo else {
             return Err("Failed to connect to database".to_owned());
         };
-
-        let users = user_repo
-            .list_users()
-            .await
-            .map_err(|error| error.to_string())?;
 
         let mut table = Table::new();
         table.add_row(Row::new(vec![
@@ -128,13 +123,32 @@ impl AuthenticatedUser {
             Cell::new("CreatedAt"),
         ]));
 
-        users.iter().for_each(|user| {
-            table.add_row(Row::new(vec![
-                Cell::new(user.id.to_string().as_str()),
-                Cell::new(user.email.as_str()),
-                Cell::new(user.created_at.to_string().as_str()),
-            ]));
-        });
+        if let Some(id) = id {
+            user_repo
+                .get_user_by_id(id)
+                .await
+                .map_err(|error| error.to_string())?
+                .map(|user| {
+                    table.add_row(Row::new(vec![
+                        Cell::new(user.id.to_string().as_str()),
+                        Cell::new(user.email.as_str()),
+                        Cell::new(user.created_at.to_string().as_str()),
+                    ]));
+                });
+        } else {
+            let users = user_repo
+                .list_users()
+                .await
+                .map_err(|error| error.to_string())?;
+
+            users.iter().for_each(|user| {
+                table.add_row(Row::new(vec![
+                    Cell::new(user.id.to_string().as_str()),
+                    Cell::new(user.email.as_str()),
+                    Cell::new(user.created_at.to_string().as_str()),
+                ]));
+            });
+        }
         table.printstd();
         Ok(())
     }
