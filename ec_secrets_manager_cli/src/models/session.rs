@@ -1,6 +1,12 @@
-#![allow(dead_code)]
-#![allow(unused)]
 use home;
+use prettytable::{Cell, Row, Table};
+use std::fs;
+
+use ec_secrets_shared_library::{
+    models::{Secret, UserCredentials},
+    repositories::{users::UserRepository, vault::VaultRepository},
+    utils::auth::{decode_keys, hash_password},
+};
 use pasetors::{
     Public,
     claims::{Claims, ClaimsValidationRules},
@@ -8,76 +14,25 @@ use pasetors::{
     token::UntrustedToken,
     version4::V4,
 };
-use prettytable::{Cell, Row, Table};
-use std::fs;
 
-use ec_secrets_shared_library::{
-    db::connect,
-    models::{Secret, User, UserCredentials},
-    repositories::{keys::KeyRepository, users::UserRepository, vault::VaultRepository},
-    utils::auth::{authorize_user, decode_keys, hash_password},
-};
+use super::get_repos;
 
-pub struct AuthenticatedUser {
+pub struct Session {
     claims: Option<Claims>,
     user_repo: Option<UserRepository>,
-    key_repo: Option<KeyRepository>,
     vault_repo: Option<VaultRepository>,
 }
 
-impl AuthenticatedUser {
-    pub async fn new() -> Self {
+impl Session {
+    pub fn new() -> Self {
         Self {
             claims: None,
-            key_repo: None,
             user_repo: None,
             vault_repo: None,
         }
     }
 
-    pub async fn get_repos(&mut self) -> Result<(), String> {
-        let repos = connect().await.map_err(|error| error.to_string())?;
-        self.key_repo = Some(repos.2);
-        self.user_repo = Some(repos.0);
-        self.vault_repo = Some(repos.1);
-        Ok(())
-    }
-    pub async fn login(&mut self, creds: UserCredentials) -> Result<(), String> {
-        self.get_repos().await?;
-        let Some(user_repo) = &self.user_repo else {
-            return Err("Failed to connect to database".to_owned());
-        };
-
-        let user_doc = user_repo
-            .get_user_by_email(&creds.email)
-            .await
-            .map_err(|error| error.to_string())?;
-
-        if let Some(user_doc) = user_doc {
-            let user = User {
-                id: user_doc.id.to_string(),
-                email: user_doc.email.clone(),
-                password: user_doc.password.clone(),
-                created_at: user_doc.created_at.to_rfc3339(),
-            };
-            let Some(key_repo) = &self.key_repo else {
-                return Err("Failed to connect to database".to_owned());
-            };
-            let token = authorize_user(&user, &creds, key_repo).await?;
-            let Some(home_dir) = home::home_dir() else {
-                return Err("Error acccessing the home directory".to_owned());
-            };
-            let token_file = home_dir.join(".lock_smith.config");
-            fs::write(token_file, token).map_err(|error| error.to_string())?;
-        } else {
-            return Err("Invalid login credentials".to_owned());
-        }
-
-        Ok(())
-    }
-
-    pub async fn validate_token(&mut self) -> Result<(), String> {
-        self.get_repos().await?;
+    async fn validate_session(&mut self) -> Result<Self, String> {
         let Some(home_dir) = home::home_dir() else {
             return Err("Error acccessing the home directory".to_owned());
         };
@@ -88,11 +43,9 @@ impl AuthenticatedUser {
         let untrusted_token = UntrustedToken::<Public, V4>::try_from(token.as_str())
             .map_err(|error| error.to_string())?;
 
-        let Some(key_repo) = &self.key_repo else {
-            return Err("Failed to connect to database".to_owned());
-        };
+        let (user_repo, vault_repo, key_repo) = get_repos().await?;
 
-        let keys = decode_keys(key_repo).await?;
+        let keys = decode_keys(&key_repo).await?;
 
         let validation_rules = ClaimsValidationRules::new();
 
@@ -101,19 +54,18 @@ impl AuthenticatedUser {
                 .map_err(|error| error.to_string())?;
 
         if let Some(claims) = trusted_token.payload_claims() {
-            self.claims = Some(claims.clone());
-            Ok(())
+            Ok(Self {
+                claims: Some(claims.clone()),
+                user_repo: Some(user_repo),
+                vault_repo: Some(vault_repo),
+            })
         } else {
             Err("Token has no playload".into())
         }
     }
 
     pub async fn get_users(&mut self, id: Option<&str>) -> Result<(), String> {
-        self.validate_token().await?;
-
-        let Some(user_repo) = &self.user_repo else {
-            return Err("Failed to connect to database".to_owned());
-        };
+        let _ = &self.validate_session().await?;
 
         let mut table = Table::new();
         table.add_row(Row::new(vec![
@@ -122,8 +74,12 @@ impl AuthenticatedUser {
             Cell::new("CreatedAt"),
         ]));
 
+        let Some(user_repo) = &self.user_repo else {
+            return Err("failed to connect to the database".to_owned());
+        };
+
         if let Some(id) = id {
-            user_repo
+            let _ = user_repo
                 .get_user_by_id(id)
                 .await
                 .map_err(|error| error.to_string())?
@@ -153,15 +109,17 @@ impl AuthenticatedUser {
     }
 
     pub async fn delete_user(&mut self, id: Option<&str>) -> Result<(), String> {
-        self.validate_token().await?;
+        let _ = &self.validate_session().await?;
+
         let Some(user_repo) = &self.user_repo else {
-            return Err("Failed to connect to database".to_owned());
+            return Err("failed to connect to the database".to_owned());
         };
+
         let Some(id) = id else {
             return Err("Please provide an id for the account to delete".to_owned());
         };
 
-        user_repo
+        let _ = user_repo
             .delete_user(id)
             .await
             .map_err(|error| error.to_string())?;
@@ -170,12 +128,14 @@ impl AuthenticatedUser {
     }
 
     pub async fn create_user(&mut self, creds: UserCredentials) -> Result<(), String> {
-        self.validate_token().await?;
+        let _ = &self.validate_session().await?;
+
         let Some(user_repo) = &self.user_repo else {
-            return Err("Failed to connect to database".to_owned());
+            return Err("failed to connect to the database".to_owned());
         };
+
         let hashed_pwd = hash_password(creds.password)?;
-        user_repo
+        let _ = user_repo
             .create_user(&creds.email, &hashed_pwd)
             .await
             .map_err(|error| error.to_string())?;
@@ -183,21 +143,21 @@ impl AuthenticatedUser {
     }
 
     pub async fn create_secret(&mut self, secret: Secret) -> Result<(), String> {
-        self.validate_token().await?;
+        let _ = &self.validate_session().await?;
 
-        let Some(claim) = &self.claims else {
-            return Err("Invalid token".to_owned());
+        let Some(vault_repo) = &self.vault_repo else {
+            return Err("failed to connect to the database".to_owned());
         };
 
-        let Some(created_by) = claim.get_claim("sub") else {
+        let Some(claims) = &self.claims else {
+            return Err("Session invalid. Please login.".to_owned());
+        };
+
+        let Some(created_by) = claims.get_claim("sub") else {
             return Err("".to_owned());
         };
 
-        let Some(vault_repo) = &self.vault_repo else {
-            return Err("Failed to connect to database".to_owned());
-        };
-
-        vault_repo
+        let _ = vault_repo
             .create_secret(&secret.key, &secret.value, created_by.to_string().as_str())
             .await
             .map_err(|error| error.to_string())?;
@@ -205,20 +165,20 @@ impl AuthenticatedUser {
     }
 
     pub async fn list_secrets(&mut self, id: Option<&str>) -> Result<(), String> {
-        self.validate_token().await?;
+        let _ = &self.validate_session().await?;
+
+        let Some(vault_repo) = &self.vault_repo else {
+            return Err("failed to connect to the database".to_owned());
+        };
+
+        let Some(claims) = &self.claims else {
+            return Err("Session invalid. Please login.".to_owned());
+        };
 
         let mut table = Table::new();
 
-        let Some(claim) = &self.claims else {
-            return Err("Invalid token".to_owned());
-        };
-
-        let Some(created_by) = claim.get_claim("sub") else {
+        let Some(created_by) = claims.get_claim("sub") else {
             return Err("".to_owned());
-        };
-
-        let Some(vault_repo) = &self.vault_repo else {
-            return Err("Failed to connect to database".to_owned());
         };
 
         if let Some(id) = id {
@@ -241,6 +201,9 @@ impl AuthenticatedUser {
                 .list_secrets(created_by.to_string().as_str())
                 .await
                 .map_err(|error| error.to_string())?;
+            if secrets.len() <= 0 {
+                return Err("No Secrets created yet".to_owned());
+            }
             secrets.iter().for_each(|secret| {
                 table.add_row(Row::new(vec![
                     Cell::new(secret.id.to_string().as_str()),
@@ -254,21 +217,21 @@ impl AuthenticatedUser {
     }
 
     pub async fn delete_secret(&mut self, id: &str) -> Result<(), String> {
-        self.validate_token().await?;
+        let _ = &self.validate_session().await?;
 
-        let Some(claim) = &self.claims else {
-            return Err("Invalid token".to_owned());
+        let Some(vault_repo) = &self.vault_repo else {
+            return Err("failed to connect to the database".to_owned());
         };
 
-        let Some(created_by) = claim.get_claim("sub") else {
+        let Some(claims) = &self.claims else {
+            return Err("Session invalid. Please login.".to_owned());
+        };
+
+        let Some(created_by) = claims.get_claim("sub") else {
             return Err("".to_owned());
         };
 
-        let Some(vault_repo) = &self.vault_repo else {
-            return Err("Failed to connect to database".to_owned());
-        };
-
-        vault_repo
+        let _ = vault_repo
             .delete_secret(id, created_by.to_string().as_str())
             .await
             .map_err(|error| error.to_string())?;
