@@ -32,7 +32,7 @@ impl Session {
         }
     }
 
-    async fn validate_session(&mut self) -> Result<Self, String> {
+    async fn validate_session(&mut self) -> Result<(), String> {
         let Some(home_dir) = home::home_dir() else {
             return Err("Error acccessing the home directory".to_owned());
         };
@@ -53,15 +53,15 @@ impl Session {
             public::verify(&keys.1, &untrusted_token, &validation_rules, None, None)
                 .map_err(|error| error.to_string())?;
 
-        if let Some(claims) = trusted_token.payload_claims() {
-            Ok(Self {
-                claims: Some(claims.clone()),
-                user_repo: Some(user_repo),
-                vault_repo: Some(vault_repo),
-            })
-        } else {
-            Err("Token has no playload".into())
-        }
+        let Some(claims) = trusted_token.payload_claims() else {
+            return Err("Token has no payload".to_owned());
+        };
+
+        self.user_repo = Some(user_repo);
+        self.claims = Some(claims.clone());
+        self.vault_repo = Some(vault_repo);
+
+        Ok(())
     }
 
     pub async fn get_users(&mut self, id: Option<&str>) -> Result<(), String> {
@@ -73,6 +73,7 @@ impl Session {
             Cell::new("Email"),
             Cell::new("CreatedAt"),
         ]));
+
 
         let Some(user_repo) = &self.user_repo else {
             return Err("failed to connect to the database".to_owned());
@@ -91,10 +92,10 @@ impl Session {
                     ]));
                 });
         } else {
-            let users = user_repo
-                .list_users()
-                .await
-                .map_err(|error| error.to_string())?;
+            let users = user_repo.list_users().await.map_err(|error| {
+                println!("Error: {error:?}");
+                error.to_string()
+            })?;
 
             users.iter().for_each(|user| {
                 table.add_row(Row::new(vec![
